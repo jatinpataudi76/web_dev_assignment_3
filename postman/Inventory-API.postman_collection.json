@@ -1,0 +1,658 @@
+{
+  "info": {
+    "_postman_id": "d8c2c3b4-3b7a-4d9a-9c1e-7f6a5b4c3d2e",
+    "name": "Inventory Management API - Web Dev III Assignment 3",
+    "description": "Postman collection for the Inventory and Data Management System. Start MongoDB and the server on http://localhost:5000 first. Run the requests from top to bottom. The Create Product request saves the new product ID in the productId collection variable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "productId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Product",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const data = pm.response.json();",
+              "if (pm.response.code === 201 && data._id) {",
+              "    pm.collectionVariables.set('productId', data._id);",
+              "}",
+              "pm.test('Status is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test('stockValue equals price x quantity', function () {",
+              "    pm.expect(data.stockValue).to.eql(data.price * data.quantity);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Wireless Mouse\",\"sku\":\"ELEC-MS-450\",\"category\":\"Electronics\",\"price\":899,\"quantity\":30,\"reorderLevel\":10,\"supplier\":\"Logitech India\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        },
+        "description": "Creates a product and returns 201. The new product's _id is stored in the productId variable for the later requests. If you run this request again, change the SKU, otherwise you will get a 409 duplicate SKU error."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Get All Products",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const data = pm.response.json();",
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Pagination fields are present', function () {",
+              "    pm.expect(data).to.have.property('total');",
+              "    pm.expect(data).to.have.property('page');",
+              "    pm.expect(data).to.have.property('totalPages');",
+              "    pm.expect(data).to.have.property('count');",
+              "    pm.expect(data.products).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        },
+        "description": "Returns 10 products by default with total, page, totalPages and count. With the seeded database, total is 12 and totalPages is 2."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Filter by Category",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('All products are in Furniture', function () {",
+              "    data.products.forEach(function (product) {",
+              "        pm.expect(product.category).to.eql('Furniture');",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products?category=Furniture",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ],
+          "query": [
+            {
+              "key": "category",
+              "value": "Furniture"
+            }
+          ]
+        },
+        "description": "Case-insensitive category filter. Returns Study Table and Ergonomic Office Chair with the seeded data."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Search by Name or SKU",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Found the gel pen', function () {",
+              "    pm.expect(data.products[0].sku).to.eql('STNY-PN-713');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products?search=pen",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ],
+          "query": [
+            {
+              "key": "search",
+              "value": "pen"
+            }
+          ]
+        },
+        "description": "Searches both name and SKU. Try search=ELEC-HP to search by SKU."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Sort by Price Descending",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Prices are descending', function () {",
+              "    pm.expect(data.products[0].price).to.be.at.least(data.products[1].price);",
+              "    pm.expect(data.products[1].price).to.be.at.least(data.products[2].price);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products?sort=price&order=desc&limit=3",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ],
+          "query": [
+            {
+              "key": "sort",
+              "value": "price"
+            },
+            {
+              "key": "order",
+              "value": "desc"
+            },
+            {
+              "key": "limit",
+              "value": "3"
+            }
+          ]
+        },
+        "description": "Sorts by price from highest to lowest. With the seeded data the first product is Thin & Light Laptop at 11249."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Pagination",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Page 2 with 5 products per page', function () {",
+              "    pm.expect(data.page).to.eql(2);",
+              "    pm.expect(data.count).to.eql(5);",
+              "    pm.expect(data.totalPages).to.eql(3);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products?page=2&limit=5",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "2"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        },
+        "description": "Returns page 2 of the product list with 5 products. With 12 seeded products, totalPages is 3."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Get Single Product by ID",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('productId')) {",
+              "    throw new Error('productId is empty. Run Create Product first to save the productId.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{productId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{productId}}"
+          ]
+        },
+        "description": "Uses the productId saved by the Create Product request."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Update Product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('productId')) {",
+              "    throw new Error('productId is empty. Run Create Product first to save the productId.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Product was updated', function () {",
+              "    pm.expect(data.price).to.eql(949);",
+              "    pm.expect(data.quantity).to.eql(35);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"price\":949,\"quantity\":35,\"supplier\":\"Logitech India Pvt Ltd\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{productId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{productId}}"
+          ]
+        },
+        "description": "Updates price, quantity and supplier. stockValue is recalculated automatically in the response."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Low-Stock Report",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Low-stock count is present', function () {",
+              "    pm.expect(data).to.have.property('count');",
+              "    pm.expect(data.lowStockItems).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products/low-stock",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "low-stock"
+          ]
+        },
+        "description": "Returns products where quantity is less than or equal to reorderLevel. With the fresh seed data, count is 4."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Category Inventory Summary",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Summary contains category rows', function () {",
+              "    pm.expect(data).to.have.property('categories');",
+              "    pm.expect(data.summary).to.be.an('array');",
+              "    pm.expect(data.summary.length).to.eql(data.categories);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "summary"
+          ]
+        },
+        "description": "Runs a MongoDB aggregation pipeline and returns totalItems, totalQuantity, totalStockValue and avgPrice for each category."
+      },
+      "response": []
+    },
+    {
+      "name": "11. Increase Stock",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('productId')) {",
+              "    throw new Error('productId is empty. Run Create Product first to save the productId.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Stock was increased', function () {",
+              "    pm.expect(data.message).to.eql('Stock updated');",
+              "    pm.expect(data.product.quantity).to.eql(45);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"change\":10}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{productId}}/stock",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{productId}}",
+            "stock"
+          ]
+        },
+        "description": "Increases stock by 10. After the update request above, quantity becomes 45."
+      },
+      "response": []
+    },
+    {
+      "name": "12. Decrease Stock",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('productId')) {",
+              "    throw new Error('productId is empty. Run Create Product first to save the productId.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Stock was decreased', function () {",
+              "    pm.expect(data.product.quantity).to.eql(40);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"change\":-5}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{productId}}/stock",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{productId}}",
+            "stock"
+          ]
+        },
+        "description": "Decreases stock by 5. Quantity becomes 40. Try a very large negative change (for example -1000) to see the 400 insufficient stock response."
+      },
+      "response": []
+    },
+    {
+      "name": "13. Delete Product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('productId')) {",
+              "    throw new Error('productId is empty. Run Create Product first to save the productId.');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.test('Delete confirmation received', function () {",
+              "    pm.expect(data.message).to.eql('Product deleted');",
+              "    pm.expect(data.id).to.eql(pm.collectionVariables.get('productId'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/products/{{productId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "products",
+            "{{productId}}"
+          ]
+        },
+        "description": "Deletes the current test product and returns a confirmation. If you run Get Single Product after this, it should return 404."
+      },
+      "response": []
+    }
+  ]
+}
